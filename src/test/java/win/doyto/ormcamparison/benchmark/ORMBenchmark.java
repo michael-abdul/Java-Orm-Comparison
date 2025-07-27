@@ -1,16 +1,13 @@
 package win.doyto.ormcamparison.benchmark;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -28,10 +25,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * @author f0rb on 2024/8/9
  */
-@ActiveProfiles("mysql8")
-@AutoConfigureMockMvc
-@SpringBootTest(classes = ORMApplication.class)
-
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Benchmark)
@@ -46,14 +39,18 @@ public class ORMBenchmark {
         new Runner(opt).run();
     }
 
-    private ConfigurableApplicationContext context;
-    @Autowired
-    private MockMvc mockMvc;
+    static ConfigurableApplicationContext context;
+    static MockMvc mockMvc;
+
+    @BeforeAll
+    static void beforeAll() {
+        context = SpringApplication.run(ORMApplication.class, "--spring.profiles.active=mysql8");
+        mockMvc = MockMvcBuilders.webAppContextSetup((WebApplicationContext) context).build();
+    }
 
     @Setup
     public void init() {
-        context = SpringApplication.run(ORMApplication.class, "--spring.profiles.active=mysql8");
-        mockMvc = MockMvcBuilders.webAppContextSetup((WebApplicationContext) context).build();
+        beforeAll();
     }
 
     @TearDown
@@ -68,9 +65,9 @@ public class ORMBenchmark {
     @Test
     public void dqQuery1() throws Exception {
         mockMvc.perform(get("/dq" + q1))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.list.size()").value(10))
-                .andExpect(jsonPath("$.list[*].id", hasItems(ids1)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.list.size()").value(10))
+               .andExpect(jsonPath("$.list[*].id", hasItems(ids1)))
         ;
     }
 
@@ -78,9 +75,9 @@ public class ORMBenchmark {
     @Test
     public void jpaQuery1() throws Exception {
         mockMvc.perform(get("/jpa" + q1))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.size()").value(10))
-                .andExpect(jsonPath("$.content[*].id", hasItems(ids1)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.content.size()").value(10))
+               .andExpect(jsonPath("$.content[*].id", hasItems(ids1)))
         ;
     }
 
@@ -88,9 +85,9 @@ public class ORMBenchmark {
     @Test
     public void jdbcQuery1() throws Exception {
         mockMvc.perform(get("/jdbc" + q1))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.list.size()").value(10))
-                .andExpect(jsonPath("$.list[*].id", hasItems(ids1)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.list.size()").value(10))
+               .andExpect(jsonPath("$.list[*].id", hasItems(ids1)))
         ;
     }
 
@@ -98,9 +95,19 @@ public class ORMBenchmark {
     @Test
     public void jooqQuery1() throws Exception {
         mockMvc.perform(get("/jooq" + q1))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.list.size()").value(10))
-                .andExpect(jsonPath("$.list[*].id", hasItems(ids1)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.list.size()").value(10))
+               .andExpect(jsonPath("$.list[*].id", hasItems(ids1)))
+        ;
+    }
+
+    @Benchmark
+    @Test
+    public void mpQuery1() throws Exception {
+        mockMvc.perform(get("/mp" + q1))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.records.size()").value(10))
+               .andExpect(jsonPath("$.records[*].id", hasItems(ids1)))
         ;
     }
 
@@ -111,8 +118,8 @@ public class ORMBenchmark {
     @Test
     public void dqQuery2() throws Exception {
         mockMvc.perform(get("/dq" + q2))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.list[*].id", hasItems(ids2)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.list[*].id", hasItems(ids2)))
         ;
     }
 
@@ -120,9 +127,9 @@ public class ORMBenchmark {
     @Test
     public void jdbcQuery2() throws Exception {
         mockMvc.perform(get("/jdbc" + q2))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.list.size()").value(10))
-                .andExpect(jsonPath("$.list[*].id", hasItems(ids2)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.list.size()").value(10))
+               .andExpect(jsonPath("$.list[*].id", hasItems(ids2)))
         ;
     }
 
@@ -130,9 +137,9 @@ public class ORMBenchmark {
     @Test
     public void jpaQuery2() throws Exception {
         mockMvc.perform(get("/jpa" + q2))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.size()").value(10))
-                .andExpect(jsonPath("$.content[*].id", hasItems(ids2)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.content.size()").value(10))
+               .andExpect(jsonPath("$.content[*].id", hasItems(ids2)))
         ;
     }
 
@@ -140,9 +147,19 @@ public class ORMBenchmark {
     @Test
     public void jooqQuery2() throws Exception {
         mockMvc.perform(get("/jooq" + q2))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.list.size()").value(10))
-                .andExpect(jsonPath("$.list[*].id", hasItems(ids2)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.list.size()").value(10))
+               .andExpect(jsonPath("$.list[*].id", hasItems(ids2)))
+        ;
+    }
+
+    @Benchmark
+    @Test
+    public void mpQuery2() throws Exception {
+        mockMvc.perform(get("/mp" + q2))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.records.size()").value(10))
+               .andExpect(jsonPath("$.records[*].id", hasItems(ids2)))
         ;
     }
 
@@ -153,8 +170,8 @@ public class ORMBenchmark {
     @Test
     public void dqQuery3() throws Exception {
         mockMvc.perform(get("/dq" + q3))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.list[*].id", hasItems(ids3)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.list[*].id", hasItems(ids3)))
         ;
     }
 
@@ -162,8 +179,8 @@ public class ORMBenchmark {
     @Test
     public void jdbcQuery3() throws Exception {
         mockMvc.perform(get("/jdbc" + q3))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.list[*].id", hasItems(ids3)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.list[*].id", hasItems(ids3)))
         ;
     }
 
@@ -171,8 +188,8 @@ public class ORMBenchmark {
     @Test
     public void jpaQuery3() throws Exception {
         mockMvc.perform(get("/jpa" + q3))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[*].id", hasItems(ids3)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.content[*].id", hasItems(ids3)))
         ;
     }
 
@@ -180,8 +197,17 @@ public class ORMBenchmark {
     @Test
     public void jooqQuery3() throws Exception {
         mockMvc.perform(get("/jooq" + q3))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.list[*].id", hasItems(ids3)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.list[*].id", hasItems(ids3)))
+        ;
+    }
+
+    @Benchmark
+    @Test
+    public void mpQuery3() throws Exception {
+        mockMvc.perform(get("/mp" + q3))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.records[*].id", hasItems(ids3)))
         ;
     }
 }
