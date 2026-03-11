@@ -7,7 +7,14 @@ logging:
 
 spring:
   datasource:
-    url: "jdbc:h2:mem:demo;MODE=MySQL;"
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://127.0.0.1:5432/postgres
+    username: postgres
+    password: povice1004
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-postgresql.sql
   jpa:
     show-sql: true
     hibernate:
