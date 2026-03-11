@@ -1,8 +1,7 @@
 <configuration>
-    <!-- H2 in-memory database (MySQL mode) for jOOQ code generation without external DB -->
     <jdbc>
         <driver>org.h2.Driver</driver>
-        <url>jdbc:h2:mem:demo;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/schema.sql'</url>
+        <url>jdbc:h2:mem:demo;MODE=MySQL;INIT=RUNSCRIPT FROM 'file:z:/java-orm-comparison/src/main/resources/schema-jooq.sql'</url>
         <username>sa</username>
         <password></password>
     </jdbc>
@@ -10,17 +9,12 @@
     <generator>
         <database>
             <name>org.jooq.meta.h2.H2Database</name>
-
             <includes>salary</includes>
-
             <excludes></excludes>
-
-            <!-- H2 in MySQL mode uses uppercase schema names -->
             <inputSchema>DEMO</inputSchema>
         </database>
 
         <generate>
-            <!-- Enable POJOs generation -->
             <pojos>true</pojos>
         </generate>
 

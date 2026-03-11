@@ -8,12 +8,12 @@ logging:
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://127.0.0.1:5432/postgres
+    url: jdbc:postgresql://127.0.0.1:5432/postgres?currentSchema=demo
     username: postgres
     password: povice1004
   sql:
     init:
-      mode: always
+      mode: never
       schema-locations: classpath:schema-postgresql.sql
   jpa:
     show-sql: true

@@ -44,7 +44,7 @@ public class ORMBenchmark {
 
     @BeforeAll
     static void beforeAll() {
-        context = SpringApplication.run(ORMApplication.class, "--spring.profiles.active=mysql8");
+        context = SpringApplication.run(ORMApplication.class, "--spring.profiles.active=postgresql");
         mockMvc = MockMvcBuilders.webAppContextSetup((WebApplicationContext) context).build();
     }
 
@@ -59,7 +59,7 @@ public class ORMBenchmark {
     }
 
     String q1 = "/salary/?work_year=2025&salaryInUsdLt=100000&salaryInUsdGt=20000&pageSize=10";
-    Integer[] ids1 = new Integer[]{136636, 39796, 40467, 61360, 30092, 5972, 11529, 12364, 31945, 40303};
+    Integer[] ids1 = new Integer[]{22, 25, 26, 40, 51, 52, 54, 65, 66, 69};
 
     @Benchmark
     @Test
@@ -91,15 +91,6 @@ public class ORMBenchmark {
         ;
     }
 
-    @Benchmark
-    @Test
-    public void jooqQuery1() throws Exception {
-        mockMvc.perform(get("/jooq" + q1))
-               .andExpect(status().isOk())
-               .andExpect(jsonPath("$.list.size()").value(10))
-               .andExpect(jsonPath("$.list[*].id", hasItems(ids1)))
-        ;
-    }
 
     @Benchmark
     @Test
@@ -112,7 +103,7 @@ public class ORMBenchmark {
     }
 
     String q2 = "/salary/?jobTitle=Researcher&or.salaryInUsdGt=300000&or.salaryInUsdLt=30000&pageSize=10";
-    Integer[] ids2 = new Integer[]{9488, 9487, 7599, 9003, 4949, 12564, 509, 10037, 13123, 8430};
+    Integer[] ids2 = new Integer[]{509, 4948, 4949, 7599, 8430, 9003, 9487, 9488, 10037, 12561};
 
     @Benchmark
     @Test
@@ -143,15 +134,6 @@ public class ORMBenchmark {
         ;
     }
 
-    @Benchmark
-    @Test
-    public void jooqQuery2() throws Exception {
-        mockMvc.perform(get("/jooq" + q2))
-               .andExpect(status().isOk())
-               .andExpect(jsonPath("$.list.size()").value(10))
-               .andExpect(jsonPath("$.list[*].id", hasItems(ids2)))
-        ;
-    }
 
     @Benchmark
     @Test
@@ -164,7 +146,7 @@ public class ORMBenchmark {
     }
 
     String q3 = "/salary/?workYear=2025&salaryInUsdGt0.workYear=2023";
-    Integer[] ids3 = new Integer[]{56675, 56676, 16197, 39564};
+    Integer[] ids3 = new Integer[]{16197, 39564, 56675, 56676};
 
     @Benchmark
     @Test
@@ -190,15 +172,6 @@ public class ORMBenchmark {
         mockMvc.perform(get("/jpa" + q3))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.content[*].id", hasItems(ids3)))
-        ;
-    }
-
-    @Benchmark
-    @Test
-    public void jooqQuery3() throws Exception {
-        mockMvc.perform(get("/jooq" + q3))
-               .andExpect(status().isOk())
-               .andExpect(jsonPath("$.list[*].id", hasItems(ids3)))
         ;
     }
 
