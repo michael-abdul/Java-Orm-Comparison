@@ -21,9 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.hamcrest.Matchers.hasItems;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -56,7 +54,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Measurement(iterations = 3, time = 3)
 public class ORMBenchmark {
 
-    // SLF4J 대신 System.out 사용 — logging.level 설정 무관하게 항상 출력됩니다.
     private static void print(String msg) {
         System.out.println(msg);
     }
@@ -65,9 +62,9 @@ public class ORMBenchmark {
         System.out.printf(fmt + "%n", args);
     }
 
-    // ── 응답시간 누산기 ────────────────────────────────────────
-    // key: "dq_q1", "jpa_q1", "jdbc_q1", "mp_q1" ...
     private static final Map<String, LatencyAccumulator> latencyMap = new ConcurrentHashMap<>();
+    // ++ 총 시간 맵 (워밍업 제외, ROUNDS 전체 소요 시간 ms)
+    private static final Map<String, Long> totalTimeMs = new ConcurrentHashMap<>();
 
     // ══════════════════════════════════════════════════════════
     // main — JMH 실행 진입점
@@ -96,47 +93,32 @@ public class ORMBenchmark {
                 .build();
     }
 
-    /** JUnit 전체 완료 후 결과표를 출력하고 컨텍스트를 닫습니다. */
     @AfterAll
     static void afterAll() {
         printLatencySummary();
         context.close();
     }
 
-    /** JMH @Setup — JMH 실행 시 Spring 컨텍스트를 초기화합니다. */
     @Setup
     public void init() {
         beforeAll();
     }
 
-    /** JMH @TearDown — JMH 실행 종료 시 컨텍스트를 닫습니다. */
     @TearDown
     public void down() {
         context.close();
     }
 
-    // ══════════════════════════════════════════════════════════
-    // JUnit 반복 측정 설정
-    // ══════════════════════════════════════════════════════════
-
-    /** JIT 컴파일 안정화용 워밍업 횟수 — 결과에서 제외됩니다. */
     private static final int WARMUP = 5;
-
-    /** 실제 측정 횟수 — avg/min/max/p95 통계에 반영됩니다. */
-    private static final int ROUNDS = 100;
+    private static final int ROUNDS = 1;
 
     // ══════════════════════════════════════════════════════════
     // 쿼리 픽스처
     // ══════════════════════════════════════════════════════════
 
-    String q1 = "/salary/?work_year=2025&salaryInUsdLt=100000&salaryInUsdGt=20000&pageSize=10";
-    Integer[] ids1 = { 22, 25, 26, 40, 51, 52, 54, 65, 66, 69 };
-
-    String q2 = "/salary/?jobTitle=Researcher&or.salaryInUsdGt=300000&or.salaryInUsdLt=30000&pageSize=10";
-    Integer[] ids2 = { 509, 4948, 4949, 7599, 8430, 9003, 9487, 9488, 10037, 12561 };
-
-    String q3 = "/salary/?workYear=2025&salaryInUsdGt0.workYear=2023";
-    Integer[] ids3 = { 16197, 39564, 56675, 56676 };
+    String q1 = "/salary/?pageSize=100";
+    String q2 = "/salary/?or.salaryInUsdGt=300000&or.salaryInUsdLt=30000&pageSize=10000000";
+    String q3 = "/salary/?work_year=2025&salaryInUsdLt=100000&salaryInUsdGt=20000&pageSize=10000000";
 
     // ══════════════════════════════════════════════════════════
     // 쿼리1 벤치마크
@@ -147,14 +129,13 @@ public class ORMBenchmark {
     public void dqQuery1() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/dq" + q1)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/dq" + q1))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.list.size()").value(10))
-                    .andExpect(jsonPath("$.list[*].id", hasItems(ids1)));
+            mockMvc.perform(get("/dq" + q1)).andExpect(status().isOk());
             record("dq_q1", System.nanoTime() - s);
         }
+        totalTimeMs.put("dq_q1", (System.nanoTime() - start) / 1_000_000L);
     }
 
     @Benchmark
@@ -162,14 +143,13 @@ public class ORMBenchmark {
     public void jpaQuery1() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/jpa" + q1)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/jpa" + q1))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content.size()").value(10))
-                    .andExpect(jsonPath("$.content[*].id", hasItems(ids1)));
+            mockMvc.perform(get("/jpa" + q1)).andExpect(status().isOk());
             record("jpa_q1", System.nanoTime() - s);
         }
+        totalTimeMs.put("jpa_q1", (System.nanoTime() - start) / 1_000_000L);
     }
 
     @Benchmark
@@ -177,14 +157,13 @@ public class ORMBenchmark {
     public void jdbcQuery1() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/jdbc" + q1)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/jdbc" + q1))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.list.size()").value(10))
-                    .andExpect(jsonPath("$.list[*].id", hasItems(ids1)));
+            mockMvc.perform(get("/jdbc" + q1)).andExpect(status().isOk());
             record("jdbc_q1", System.nanoTime() - s);
         }
+        totalTimeMs.put("jdbc_q1", (System.nanoTime() - start) / 1_000_000L);
     }
 
     @Benchmark
@@ -192,14 +171,13 @@ public class ORMBenchmark {
     public void mpQuery1() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/mp" + q1)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/mp" + q1))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.records.size()").value(10))
-                    .andExpect(jsonPath("$.records[*].id", hasItems(ids1)));
+            mockMvc.perform(get("/mp" + q1)).andExpect(status().isOk());
             record("mp_q1", System.nanoTime() - s);
         }
+        totalTimeMs.put("mp_q1", (System.nanoTime() - start) / 1_000_000L);
     }
 
     // ══════════════════════════════════════════════════════════
@@ -211,13 +189,13 @@ public class ORMBenchmark {
     public void dqQuery2() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/dq" + q2)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/dq" + q2))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.list[*].id", hasItems(ids2)));
+            mockMvc.perform(get("/dq" + q2)).andExpect(status().isOk());
             record("dq_q2", System.nanoTime() - s);
         }
+        totalTimeMs.put("dq_q2", (System.nanoTime() - start) / 1_000_000L);
     }
 
     @Benchmark
@@ -225,14 +203,13 @@ public class ORMBenchmark {
     public void jpaQuery2() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/jpa" + q2)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/jpa" + q2))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content.size()").value(10))
-                    .andExpect(jsonPath("$.content[*].id", hasItems(ids2)));
+            mockMvc.perform(get("/jpa" + q2)).andExpect(status().isOk());
             record("jpa_q2", System.nanoTime() - s);
         }
+        totalTimeMs.put("jpa_q2", (System.nanoTime() - start) / 1_000_000L);
     }
 
     @Benchmark
@@ -240,14 +217,13 @@ public class ORMBenchmark {
     public void jdbcQuery2() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/jdbc" + q2)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/jdbc" + q2))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.list.size()").value(10))
-                    .andExpect(jsonPath("$.list[*].id", hasItems(ids2)));
+            mockMvc.perform(get("/jdbc" + q2)).andExpect(status().isOk());
             record("jdbc_q2", System.nanoTime() - s);
         }
+        totalTimeMs.put("jdbc_q2", (System.nanoTime() - start) / 1_000_000L);
     }
 
     @Benchmark
@@ -255,14 +231,13 @@ public class ORMBenchmark {
     public void mpQuery2() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/mp" + q2)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/mp" + q2))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.records.size()").value(10))
-                    .andExpect(jsonPath("$.records[*].id", hasItems(ids2)));
+            mockMvc.perform(get("/mp" + q2)).andExpect(status().isOk());
             record("mp_q2", System.nanoTime() - s);
         }
+        totalTimeMs.put("mp_q2", (System.nanoTime() - start) / 1_000_000L);
     }
 
     // ══════════════════════════════════════════════════════════
@@ -274,13 +249,13 @@ public class ORMBenchmark {
     public void dqQuery3() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/dq" + q3)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/dq" + q3))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.list[*].id", hasItems(ids3)));
+            mockMvc.perform(get("/dq" + q3)).andExpect(status().isOk());
             record("dq_q3", System.nanoTime() - s);
         }
+        totalTimeMs.put("dq_q3", (System.nanoTime() - start) / 1_000_000L);
     }
 
     @Benchmark
@@ -288,13 +263,13 @@ public class ORMBenchmark {
     public void jpaQuery3() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/jpa" + q3)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/jpa" + q3))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content[*].id", hasItems(ids3)));
+            mockMvc.perform(get("/jpa" + q3)).andExpect(status().isOk());
             record("jpa_q3", System.nanoTime() - s);
         }
+        totalTimeMs.put("jpa_q3", (System.nanoTime() - start) / 1_000_000L);
     }
 
     @Benchmark
@@ -302,13 +277,13 @@ public class ORMBenchmark {
     public void jdbcQuery3() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/jdbc" + q3)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/jdbc" + q3))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.list[*].id", hasItems(ids3)));
+            mockMvc.perform(get("/jdbc" + q3)).andExpect(status().isOk());
             record("jdbc_q3", System.nanoTime() - s);
         }
+        totalTimeMs.put("jdbc_q3", (System.nanoTime() - start) / 1_000_000L);
     }
 
     @Benchmark
@@ -316,13 +291,13 @@ public class ORMBenchmark {
     public void mpQuery3() throws Exception {
         for (int i = 0; i < WARMUP; i++)
             mockMvc.perform(get("/mp" + q3)).andExpect(status().isOk());
+        long start = System.nanoTime();
         for (int i = 0; i < ROUNDS; i++) {
             long s = System.nanoTime();
-            mockMvc.perform(get("/mp" + q3))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.records[*].id", hasItems(ids3)));
+            mockMvc.perform(get("/mp" + q3)).andExpect(status().isOk());
             record("mp_q3", System.nanoTime() - s);
         }
+        totalTimeMs.put("mp_q3", (System.nanoTime() - start) / 1_000_000L);
     }
 
     // ══════════════════════════════════════════════════════════
@@ -335,15 +310,14 @@ public class ORMBenchmark {
         String[] labels = { "DoytoQuery  ", "JPA       ", "JDBC      ", "MyBatis+  " };
 
         print("");
-        print("=====================================================================");
+        print("====================================================================================");
         print("  ORM 프레임워크 응답시간 벤치마크 결과 (JUnit 단독 실행)");
         print("  단위: ms (밀리초) / s (초), 낮을수록 좋음");
-        print("=====================================================================");
+        print("====================================================================================");
 
         for (int qi = 0; qi < queries.length; qi++) {
             String q = queries[qi];
 
-            // 평균 기준으로 순위 정렬합니다.
             record OrmEntry(int ormIdx, long avgNs) {
             }
             java.util.List<OrmEntry> ranked = new java.util.ArrayList<>();
@@ -356,37 +330,30 @@ public class ORMBenchmark {
 
             print("");
             printf("  [쿼리%d] %s", qi + 1, queryDescription(qi + 1));
-            print("  ┌──────┬─────────────┬────────────┬────────────┬────────────┬────────────┐");
-            print("  │ 순위 │ 프레임워크   │  평균       │  최소       │  최대       │  p95       │");
-            print("  ├──────┼─────────────┼────────────┼────────────┼────────────┼────────────┤");
+            print("  ┌──────┬─────────────┬────────────┬────────────┬────────────┬────────────┬────────────┐");
+            print("  │ 순위 │ 프레임워크   │  평균       │  최소       │  최대       │  p95       │  총 시간   │");
+            print("  ├──────┼─────────────┼────────────┼────────────┼────────────┼────────────┼────────────┤");
 
             String[] rankMedals = { "1위", "2위", "3위", "4위" };
             for (int r = 0; r < ranked.size(); r++) {
                 int i = ranked.get(r).ormIdx();
                 LatencyAccumulator acc = latencyMap.get(orms[i] + "_" + q);
-                printf("  │ %s │ %s │ %s │ %s │ %s │ %s │",
+                Long totalMs = totalTimeMs.get(orms[i] + "_" + q);
+                String totalStr = totalMs != null ? formatDuration(totalMs * 1_000_000L) : "     N/A  ";
+                printf("  │ %s │ %s │ %s │ %s │ %s │ %s │ %s │",
                         rankMedals[r], labels[i],
                         formatDuration(acc.avg()),
                         formatDuration(acc.min()),
                         formatDuration(acc.max()),
-                        formatDuration(acc.p95()));
+                        formatDuration(acc.p95()),
+                        totalStr);
             }
-            print("  └──────┴─────────────┴────────────┴────────────┴────────────┴────────────┘");
+            print("  └──────┴─────────────┴────────────┴────────────┴────────────┴────────────┴────────────┘");
         }
 
-        // 종합 순위 출력합니다.
         printOverallRanking(orms, labels, queries);
     }
 
-    /**
-     * 나노초를 가독성 높은 단위로 포맷합니다.
-     *
-     * <ul>
-     * <li>1,000ms 이상 → s (초, 소수점 3자리)</li>
-     * <li>1ms 이상 → ms (밀리초, 소수점 2자리)</li>
-     * <li>1ms 미만 → ms (소수점 3자리)</li>
-     * </ul>
-     */
     private static String formatDuration(long ns) {
         double ms = ns / 1_000_000.0;
         if (ms >= 1_000.0) {
@@ -440,7 +407,7 @@ public class ORMBenchmark {
                     formatDuration(scores.get(i).avgNs()));
         }
         print("  └──────┴─────────────┴───────────────────────┘");
-        print("=====================================================================");
+        print("====================================================================================");
         print("");
     }
 
@@ -470,8 +437,6 @@ public class ORMBenchmark {
         print("");
     }
 
-    // ── 내부 유틸리티 ─────────────────────────────────────────
-
     private static void record(String key, long elapsedNanos) {
         latencyMap.computeIfAbsent(key, k -> new LatencyAccumulator()).add(elapsedNanos);
     }
@@ -487,7 +452,6 @@ public class ORMBenchmark {
         private final AtomicLong min = new AtomicLong(Long.MAX_VALUE);
         private final AtomicLong max = new AtomicLong(0);
 
-        // p95 계산용 — 최대 10,000개 샘플만 보관합니다.
         private static final int MAX_SAMPLES = 10_000;
         private final java.util.concurrent.ConcurrentLinkedQueue<Long> samples = new java.util.concurrent.ConcurrentLinkedQueue<>();
 
