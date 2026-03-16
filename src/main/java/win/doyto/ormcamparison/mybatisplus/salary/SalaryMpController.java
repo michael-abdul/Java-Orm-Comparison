@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/mp/salary")
 public class SalaryMpController {
     @Autowired
-    private SalaryMapper salaryMapper;
+    private SalaryMpMapper salaryMapper;
 
     @GetMapping("/")
     public Page<SalaryEntity> page(SalaryQuery query) {
@@ -46,7 +46,8 @@ public class SalaryMpController {
             });
         }
         if (query.getSalaryInUsdGt0() != null) {
-            wrapper.gtSql("salary_in_usd", "SELECT max(salary_in_usd) FROM salary WHERE work_year = " + query.getSalaryInUsdGt0().getWorkYear());
+            wrapper.gtSql("salary_in_usd", "SELECT max(salary_in_usd) FROM salary WHERE work_year = "
+                    + query.getSalaryInUsdGt0().getWorkYear());
         }
         return wrapper;
     }

@@ -1,6 +1,8 @@
 package win.doyto.ormcamparison.jdbc.salary;
 
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -19,24 +21,33 @@ import java.util.StringJoiner;
  * @author f0rb on 2025/6/26
  */
 @RestController
+@Slf4j
 @RequestMapping("/jdbc/salary")
 public class SalaryJdbcController {
     @Resource
     private JdbcTemplate jdbcTemplate;
     private RowMapper<SalaryEntity> rowMapper = new BeanPropertyRowMapper<>(SalaryEntity.class);
+
     @GetMapping("/")
     public PageList<SalaryEntity> page(SalaryQuery query) {
         List<Object> argList = new ArrayList<>();
         String where = buildWhere(query, argList);
         String page = " LIMIT " + query.getPageSize() + " OFFSET " + query.getPageNumber() * query.getPageSize();
-        String sql = "SELECT id, work_year, experience_level, employment_type, job_title, salary, salary_currency, salary_in_usd, employee_residence, remote_ratio, company_location, company_size FROM salary" + where + page;
+        String sql = "SELECT id, work_year, experience_level, employment_type, job_title, salary, salary_currency, salary_in_usd, employee_residence, remote_ratio, company_location, company_size FROM salary"
+                + where + page;
         List<SalaryEntity> entities = jdbcTemplate.query(sql, rowMapper, argList.toArray());
+        System.out.println("Ma'lumotlar ro'yxati:");
+        System.out.println(entities);
         long count = jdbcTemplate.queryForObject("SELECT count(0) FROM salary" + where, long.class, argList.toArray());
+        log.info("Bazadan qaytgan natijalar soni: {}", entities.size());
+        entities.forEach(entity -> log.debug("Ma'lumot: {}", entity));
         return new PageList<>(entities, count);
     }
+
     public String buildWhere(SalaryQuery query, List<Object> argList) {
         return buildWhere(query, argList, " AND ", " WHERE ", "");
     }
+
     public String buildWhere(SalaryQuery query, List<Object> argList, String delimiter, String prefix, String suffix) {
         StringJoiner where = new StringJoiner(delimiter, prefix, suffix);
         where.setEmptyValue("");

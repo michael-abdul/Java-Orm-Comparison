@@ -1,4 +1,4 @@
-package win.doyto.ormcamparison.jooq.salary;
+package win.doyto.ormcamparison.mybatis;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -6,8 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import win.doyto.query.core.PageQuery;
-
-import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -17,8 +15,10 @@ import java.math.BigDecimal;
 public class SalaryQuery extends PageQuery {
     private Integer workYear;
     private String jobTitle;
-    private BigDecimal salaryInUsdLt;
-    private BigDecimal salaryInUsdGt;
+    private Double salaryInUsdLt;
+    private Double salaryInUsdGt;
     private SalaryQuery or;
     private SalaryQuery salaryInUsdGt0;
+
+    public SalaryQuery getOrCondition() { return or; }
 }

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="win.doyto.ormcamparison.mybatis.SalaryMapper">
+
+    <sql id="whereClause">
+        <where>
+            <if test="query.workYear != null">
+                AND work_year = #{query.workYear}
+            </if>
+            <if test="query.jobTitle != null">
+                AND job_title = #{query.jobTitle}
+            </if>
+            <if test="query.salaryInUsdLt != null">
+                AND salary_in_usd &lt; #{query.salaryInUsdLt}
+            </if>
+            <if test="query.salaryInUsdGt != null">
+                AND salary_in_usd &gt; #{query.salaryInUsdGt}
+            </if>
+
+            <if test="query.orCondition != null">
+                AND (
+                    <if test="query.orCondition.salaryInUsdGt != null">
+                        salary_in_usd &gt; #{query.orCondition.salaryInUsdGt}
+                    </if>
+                    <if test="query.orCondition.salaryInUsdLt != null">
+                        OR salary_in_usd &lt; #{query.orCondition.salaryInUsdLt}
+                    </if>
+                )
+            </if>
+
+            <if test="query.salaryInUsdGt0 != null">
+                AND salary_in_usd &gt; (
+                    SELECT max(salary_in_usd)
+                    FROM salary
+                    WHERE work_year = #{query.salaryInUsdGt0.workYear}
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectPage" resultType="win.doyto.ormcamparison.mybatis.SalaryEntity">
+        SELECT * FROM salary
+        <include refid="whereClause"/>
+        LIMIT #{query.pageSize} OFFSET #{query.pageNumber} * #{query.pageSize}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT count(*) FROM salary
+        <include refid="whereClause"/>
+    </select>
+
+</mapper>
