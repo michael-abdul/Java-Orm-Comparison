@@ -1,18 +1,22 @@
 package win.doyto.ormcamparison.mybatis;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import win.doyto.query.core.PageQuery;
 
 @Getter
 @Setter
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SalaryQuery extends PageQuery {
+public class SalaryQuery {
+    @Builder.Default
+    private Integer pageNumber = 0;
+    @Builder.Default
+    private Integer pageSize = 10;
     private Integer workYear;
     private String jobTitle;
     private Double salaryInUsdLt;
@@ -20,5 +24,7 @@ public class SalaryQuery extends PageQuery {
     private SalaryQuery or;
     private SalaryQuery salaryInUsdGt0;
 
-    public SalaryQuery getOrCondition() { return or; }
+    public SalaryQuery getOrCondition() {
+        return or;
+    }
 }

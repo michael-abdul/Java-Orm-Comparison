@@ -7,24 +7,39 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaRepositoryImplementation;
 import org.springframework.data.web.PagedModel;
 import org.springframework.web.bind.annotation.*;
-import win.doyto.query.core.PageQuery;
 
 @AllArgsConstructor
-public abstract class AbstractJpaController<E, ID, Q extends PageQuery> {
+public abstract class AbstractJpaController<E, ID, Q> {
     protected JpaRepositoryImplementation<E, ID> repository;
 
     @GetMapping("/")
     public PagedModel<E> query(Q query) {
-        Pageable pageable = PageRequest.of(query.getPageNumber(), query.getPageSize());
+        Pageable pageable = PageRequest.of(getPageNumber(query), getPageSize(query));
         return new PagedModel<>(repository.findAll(toSpecification(query), pageable));
     }
 
     @DeleteMapping("/")
-    public long delete(Q query) {
+    public long deleteByQuery(Q query) {
         return repository.delete(toSpecification(query));
     }
 
     protected abstract Specification<E> toSpecification(Q query);
+
+    protected int getPageNumber(Q query) {
+        try {
+            return (int) query.getClass().getMethod("getPageNumber").invoke(query);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    protected int getPageSize(Q query) {
+        try {
+            return (int) query.getClass().getMethod("getPageSize").invoke(query);
+        } catch (Exception e) {
+            return 10;
+        }
+    }
 
     @PostMapping("/")
     public void create(@RequestBody E e) {
@@ -37,7 +52,7 @@ public abstract class AbstractJpaController<E, ID, Q extends PageQuery> {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable ID id) {
+    public void deleteById(@PathVariable ID id) {
         this.repository.deleteById(id);
     }
 

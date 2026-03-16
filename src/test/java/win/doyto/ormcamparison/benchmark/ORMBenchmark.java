@@ -85,9 +85,9 @@ public class ORMBenchmark {
     // 쿼리 픽스처
     // ══════════════════════════════════════════════════════════
 
-    String q1 = "/salary/?pageSize=100";
-    String q2 = "/salary/?or.salaryInUsdGt=300000&or.salaryInUsdLt=30000&pageSize=10000";
-    String q3 = "/salary/?work_year=2025&salaryInUsdLt=100000&salaryInUsdGt=20000&pageSize=10000";
+    String q1 = "/salary/?pageSize=1000";
+    String q2 = "/salary/?or.salaryInUsdGt=300000&or.salaryInUsdLt=30000&pageSize=1000";
+    String q3 = "/salary/?work_year=2025&salaryInUsdLt=100000&salaryInUsdGt=20000&pageSize=1000";
 
     // ══════════════════════════════════════════════════════════
     // DRY: 공통 벤치마크 헬퍼
