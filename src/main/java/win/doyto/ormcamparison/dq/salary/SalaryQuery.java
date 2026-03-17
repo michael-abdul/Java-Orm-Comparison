@@ -19,6 +19,6 @@ public class SalaryQuery extends PageQuery {
     private Double salaryInUsdLt;
     private Double salaryInUsdGt;
     private SalaryQuery or;
-    @Subquery(select = "max(salary_in_usd)", from = SalaryEntity.class)
+    @Subquery(select = "max(salary_in_usd)", from = Salaries1Entity.class)
     private SalaryQuery salaryInUsdGt0;
 }

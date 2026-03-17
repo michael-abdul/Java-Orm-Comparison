@@ -6,5 +6,5 @@ import win.doyto.query.web.controller.AbstractEIQController;
 
 @RestController
 @RequestMapping("/dq/salary")
-public class SalaryController extends AbstractEIQController<SalaryEntity, Integer, SalaryQuery> {
+public class SalaryController extends AbstractEIQController<Salaries1Entity, Integer, SalaryQuery> {
 }

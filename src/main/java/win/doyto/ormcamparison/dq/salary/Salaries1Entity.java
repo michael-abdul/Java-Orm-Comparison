@@ -1,12 +1,14 @@
 package win.doyto.ormcamparison.dq.salary;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import win.doyto.query.entity.AbstractPersistable;
 
 import java.math.BigDecimal;
 
 @Data
-public class SalaryEntity extends AbstractPersistable<Integer> {
+@EqualsAndHashCode(callSuper = true)
+public class Salaries1Entity extends AbstractPersistable<Integer> {
     private Integer workYear;
     private String experienceLevel;
     private String employmentType;

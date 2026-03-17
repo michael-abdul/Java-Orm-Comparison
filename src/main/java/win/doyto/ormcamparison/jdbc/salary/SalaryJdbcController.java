@@ -33,12 +33,13 @@ public class SalaryJdbcController {
         List<Object> argList = new ArrayList<>();
         String where = buildWhere(query, argList);
         String page = " LIMIT " + query.getPageSize() + " OFFSET " + query.getPageNumber() * query.getPageSize();
-        String sql = "SELECT id, work_year, experience_level, employment_type, job_title, salary, salary_currency, salary_in_usd, employee_residence, remote_ratio, company_location, company_size FROM salary"
+        String sql = "SELECT id, work_year, experience_level, employment_type, job_title, salary, salary_currency, salary_in_usd, employee_residence, remote_ratio, company_location, company_size FROM salaries1"
                 + where + page;
         List<SalaryEntity> entities = jdbcTemplate.query(sql, rowMapper, argList.toArray());
         System.out.println("Ma'lumotlar ro'yxati:");
         System.out.println(entities);
-        long count = jdbcTemplate.queryForObject("SELECT count(0) FROM salary" + where, long.class, argList.toArray());
+        long count = jdbcTemplate.queryForObject("SELECT count(0) FROM salaries1" + where, long.class,
+                argList.toArray());
         log.info("Bazadan qaytgan natijalar soni: {}", entities.size());
         entities.forEach(entity -> log.debug("Ma'lumot: {}", entity));
         return new PageList<>(entities, count);
@@ -71,7 +72,7 @@ public class SalaryJdbcController {
             where.add(buildWhere(query.getOr(), argList, " OR ", "(", ")"));
         }
         if (query.getSalaryInUsdGt0() != null) {
-            String condition = "salary_in_usd > (SELECT max(salary_in_usd) FROM salary";
+            String condition = "salary_in_usd > (SELECT max(salary_in_usd) FROM salaries1";
             where.add(condition + buildWhere(query.getSalaryInUsdGt0(), argList, " AND ", " WHERE ", ")"));
         }
         return where.toString();

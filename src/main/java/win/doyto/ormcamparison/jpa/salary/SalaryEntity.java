@@ -7,7 +7,7 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Data
 @Entity
-@Table(name = "salary")
+@Table(name = "salaries1")
 public class SalaryEntity extends AbstractPersistable<Long> {
     private Integer workYear;
     private String experienceLevel;

@@ -31,7 +31,7 @@
             <if test="query.salaryInUsdGt0 != null">
                 AND salary_in_usd &gt; (
                     SELECT max(salary_in_usd)
-                    FROM salary
+                    FROM salaries1
                     WHERE work_year = #{query.salaryInUsdGt0.workYear}
                 )
             </if>
@@ -39,13 +39,13 @@
     </sql>
 
     <select id="selectPage" resultType="win.doyto.ormcamparison.mybatis.SalaryEntity">
-        SELECT * FROM salary
+        SELECT * FROM salaries1
         <include refid="whereClause"/>
         LIMIT #{query.pageSize} OFFSET #{query.pageNumber} * #{query.pageSize}
     </select>
 
     <select id="count" resultType="long">
-        SELECT count(*) FROM salary
+        SELECT count(*) FROM salaries1
         <include refid="whereClause"/>
     </select>
 

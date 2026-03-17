@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("demo.salary")
+@TableName("public.salaries1")
 public class SalaryEntity {
     private Integer id;
     private Integer workYear;
