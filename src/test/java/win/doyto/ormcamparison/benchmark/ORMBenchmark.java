@@ -85,14 +85,14 @@ public class ORMBenchmark {
     }
 
     private static final int WARMUP = 5;
-    private static final int ROUNDS = 1000;
+    private static final int ROUNDS = 100;
 
     // ══════════════════════════════════════════════════════════
     // 쿼리 픽스처
     // ══════════════════════════════════════════════════════════
 
     private static final String Q1 = "/salary/?pageSize=100";
-    private static final String Q2 = "/salary/?or.salaryInUsdGt=300000&or.salaryInUsdLt=30000&pageSize=100";
+    private static final String Q2 = "/salary/?orConditions[0].salaryInUsdGt=300000&orConditions[0].salaryInUsdLt=30000&pageSize=100";
     private static final String Q3 = "/salary/?work_year=2025&salaryInUsdLt=100000&salaryInUsdGt=20000&pageSize=100";
 
     // ══════════════════════════════════════════════════════════
@@ -143,7 +143,7 @@ public class ORMBenchmark {
     }
 
     // ══════════════════════════════════════════════════════════
-    // JPA 벤치마크
+    // JPA 벤치마크 (Criteria API)
     // ══════════════════════════════════════════════════════════
 
     @Benchmark
@@ -162,6 +162,30 @@ public class ORMBenchmark {
     @Test
     public void jpaQuery3() throws Exception {
         runBenchmark("jpa_q3", "/jpa" + Q3);
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // JPA Native SQL 벤치마크 (최적화)
+    // ══════════════════════════════════════════════════════════
+
+    @Benchmark
+    @Test
+    public void jpaNativeQuery1() throws Exception {
+        runBenchmark("jpanative_q1", "/jpa/salary/optimized?pageSize=100");
+    }
+
+    @Benchmark
+    @Test
+    public void jpaNativeQuery2() throws Exception {
+        runBenchmark("jpanative_q2",
+                "/jpa/salary/optimized-or?pageSize=100&orConditions[0].salaryInUsdGt=300000&orConditions[0].salaryInUsdLt=30000");
+    }
+
+    @Benchmark
+    @Test
+    public void jpaNativeQuery3() throws Exception {
+        runBenchmark("jpanative_q3",
+                "/jpa/salary/optimized?work_year=2025&salaryInUsdLt=100000&salaryInUsdGt=20000&pageSize=100");
     }
 
     // ══════════════════════════════════════════════════════════
@@ -236,16 +260,17 @@ public class ORMBenchmark {
 
     public static void printLatencySummary() {
         String[] queries = { "q1", "q2", "q3" };
-        String[] orms = { "dq", "jpa", "jdbc", "mp", "mybatis" };
-        String[] labels = { "DoytoQuery ", "JPA        ", "JDBC       ", "MyBatis+   ", "MyBatis    " };
+        String[] orms = { "dq", "jpa", "jpanative", "jdbc", "mp", "mybatis" };
+        String[] labels = { "DoytoQuery   ", "JPA (Criteria)", "JPA (Native) ", "JDBC         ", "MyBatis+     ",
+                "MyBatis      " };
 
         print("");
         print("════════════════════════════════════════════════════════════════════════════════════════════════════");
-        print("  ORM 프레임워크 벤치마크 결과");
+        print("  ORM 프레임워크 벤치마크 결과 (Native SQL 포함)");
         print("  단위: ms / s │ OPS: 초당 처리량 (높을수록 좋음)");
         print("════════════════════════════════════════════════════════════════════════════════════════════════════");
 
-        String[] rankMedals = { "1위", "2위", "3위", "4위", "5위" };
+        String[] rankMedals = { "1위", "2위", "3위", "4위", "5위", "6위" };
 
         for (int qi = 0; qi < queries.length; qi++) {
             String q = queries[qi];
@@ -331,7 +356,7 @@ public class ORMBenchmark {
         }
         scores.sort(java.util.Comparator.comparingLong(OrmScore::avgNs));
 
-        String[] medals = { "1위", "2위", "3위", "4위", "5위" };
+        String[] medals = { "1위", "2위", "3위", "4위", "5위", "6위" };
         print("");
         print("  ┌────────────────────────────────────────────────────────────┐");
         print("  │        ORM 종합 순위 (전체 쿼리 평균 기준)                   │");

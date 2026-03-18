@@ -17,13 +17,13 @@
                 AND salary_in_usd &gt; #{query.salaryInUsdGt}
             </if>
 
-            <if test="query.orCondition != null">
+            <if test="query.orConditions != null and query.orConditions.size() > 0">
                 AND (
-                    <if test="query.orCondition.salaryInUsdGt != null">
-                        salary_in_usd &gt; #{query.orCondition.salaryInUsdGt}
+                    <if test="query.orConditions[0].salaryInUsdGt != null">
+                        salary_in_usd &gt; #{query.orConditions[0].salaryInUsdGt}
                     </if>
-                    <if test="query.orCondition.salaryInUsdLt != null">
-                        OR salary_in_usd &lt; #{query.orCondition.salaryInUsdLt}
+                    <if test="query.orConditions[0].salaryInUsdLt != null">
+                        OR salary_in_usd &lt; #{query.orConditions[0].salaryInUsdLt}
                     </if>
                 )
             </if>

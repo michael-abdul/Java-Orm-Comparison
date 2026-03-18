@@ -6,8 +6,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import win.doyto.query.core.PageList;
-
 @RestController
 @RequestMapping("/mybatis/salary")
 public class SalaryMybatisController {
@@ -16,7 +14,7 @@ public class SalaryMybatisController {
     private SalaryMapper salaryMapper;
 
     @GetMapping("/")
-    public PageList<SalaryEntity> page(SalaryQuery query) {
+    public PageList<SalaryEntity> page(MybatisSalaryQuery query) {
         List<SalaryEntity> list = salaryMapper.selectPage(query);
         long total = salaryMapper.count(query);
         return new PageList<>(list, total);

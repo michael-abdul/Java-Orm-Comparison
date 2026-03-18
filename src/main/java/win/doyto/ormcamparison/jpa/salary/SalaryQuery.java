@@ -1,5 +1,6 @@
 package win.doyto.ormcamparison.jpa.salary;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,6 +22,8 @@ public class SalaryQuery {
     private String jobTitle;
     private Double salaryInUsdLt;
     private Double salaryInUsdGt;
-    private SalaryQuery or;
+    private List<SalaryQuery> orConditions;
     private SalaryQuery salaryInUsdGt0;
+    private Integer empNo;
+    private String empName;
 }
